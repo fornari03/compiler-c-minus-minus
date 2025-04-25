@@ -38,13 +38,28 @@ SINAL   [+|-]
 }
 
 
+{SINAL}?{DIGITO}+ {
+    printf("número inteiro (%s)\n", yytext);
+}
+
+
 {SINAL}?{DIGITO}+"."?{DIGITO}* {
-    printf("número (%s)\n", yytext);
+    printf("float (%s)\n", yytext);
 }
 
 
 ({LETRA}|_)({LETRA}|{DIGITO}|_)* {
     printf("identificador (%s)\n", yytext);
+}
+
+
+'([^\\'\n])'|'\\n'|'\\0'|'\\t' {
+    printf("char (%s)\n", yytext);
+}
+
+
+\"[^\n\"]*\" {
+    printf("string (%s)\n", yytext);
 }
 
 
