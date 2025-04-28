@@ -21,8 +21,6 @@ SINAL   [+|-]
 
     <COMENTARIO>[^*]+ {} // ignora tudo que não é '*'
 
-    <COMENTARIO>"*"+[^*/] {} // ignora '*' se não tiver antes de '/'
-
     <COMENTARIO>"*/" {
         BEGIN(INITIAL);
         printf("Comentário de múltiplas linhas\n");
@@ -31,6 +29,8 @@ SINAL   [+|-]
     <COMENTARIO><<EOF>> {
         printf("erro: comentário não fechado\n");
     }
+
+    <COMENTARIO>. {} // ignora o resto
 
 
 {DIGITO}+({LETRA}|_)+({LETRA}|{DIGITO}|_)* {
@@ -48,7 +48,7 @@ SINAL   [+|-]
 }
 
 
-({LETRA}|_)({LETRA}|{DIGITO}|_)* {
+{LETRA}({LETRA}|{DIGITO}|_)* {
     printf("identificador (%s)\n", yytext);
 }
 
