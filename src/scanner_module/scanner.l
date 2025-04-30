@@ -8,7 +8,7 @@
 /* definitions */
 DIGITO  [0-9]
 LETRA   [a-zA-Z]
-SINAL   [+|-]
+SINAL   [+-]
 
 /* estado exclusivo */
 %x COMENTARIO
