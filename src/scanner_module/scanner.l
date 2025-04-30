@@ -28,6 +28,7 @@ SINAL   [+|-]
 
     <COMENTARIO><<EOF>> {
         printf("erro: comentário não fechado\n");
+        return 1;
     }
 
     <COMENTARIO>. {} // ignora o resto
