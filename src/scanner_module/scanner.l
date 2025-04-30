@@ -33,6 +33,17 @@ SINAL   [+|-]
 
     <COMENTARIO>. {} // ignora o resto
 
+"while"|"if"|"else"|"char"|"int" {
+    printf("palavra reservada (%s)\n", yytext);
+}
+
+"(" {
+    printf("abre parênteses\n");
+}
+
+")" {
+    printf("fecha parênteses\n");
+}
 
 {DIGITO}+({LETRA}|_)+({LETRA}|{DIGITO}|_)* {
     printf("erro: (%s)\n", yytext);
