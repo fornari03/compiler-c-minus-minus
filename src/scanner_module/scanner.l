@@ -34,14 +34,38 @@ SINAL   [+-]
 
 <COMENTARIO>. {} // ignora o resto
 
-"while"|"if"|"else"|"char"|"int" {
+"while"|"if"|"else"|"for"|"char"|"int"|"string"|"void" {
 //    printf("palavra reservada (%s)\n", yytext);
     if (strcmp(yytext, "while") == 0) return WHILE;
     if (strcmp(yytext, "if") == 0) return IF;
     if (strcmp(yytext, "else") == 0) return ELSE;
+    if (strcmp(yytext, "for") == 0) return FOR;
     if (strcmp(yytext, "char") == 0) return CHAR_T;
     if (strcmp(yytext, "int") == 0) return INT_T;
+    if (strcmp(yytext, "string") == 0) return STRING;
+    if (strcmp(yytext, "void") == 0) return VOID;
 }
+
+
+"="|"!"|"+"|"-"|"*"|"/"|"=="|"!="|"<"|">"|"<="|">="|"&&"|"||" {
+//      printf("operador (%s)\n", yytext);
+    if (strcmp(yytext, "=") == 0) return ATR;
+    if (strcmp(yytext, "!") == 0) return NOT;
+    if (strcmp(yytext, "+") == 0) return PLUS;
+    if (strcmp(yytext, "-") == 0) return MINUS;
+    if (strcmp(yytext, "*") == 0) return MULT;
+    if (strcmp(yytext, "/") == 0) return DIV;
+    if (strcmp(yytext, "==") == 0) return EQUALS;
+    if (strcmp(yytext, "!=") == 0) return NOT_EQUALS;
+    if (strcmp(yytext, "<") == 0) return LESS_THAN;
+    if (strcmp(yytext, ">") == 0) return MORE_THAN;
+    if (strcmp(yytext, "<=") == 0) return LESS_EQUAL;
+    if (strcmp(yytext, ">=") == 0) return MORE_EQUAL;
+    if (strcmp(yytext, "&&") == 0) return AND_OP;
+    if (strcmp(yytext, "||") == 0) return OR_OP;
+}
+
+
 
 "(" {
 //    printf("abre parênteses\n");
