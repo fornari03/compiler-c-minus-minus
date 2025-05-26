@@ -34,7 +34,7 @@ SINAL   [+-]
 
 <COMENTARIO>. {} // ignora o resto
 
-"while"|"if"|"else"|"for"|"char"|"int"|"string"|"void" {
+"while"|"if"|"else"|"for"|"char"|"int"|"string"|"void"|"return" {
 //    printf("palavra reservada (%s)\n", yytext);
     if (strcmp(yytext, "while") == 0) return WHILE;
     if (strcmp(yytext, "if") == 0) return IF;
@@ -44,6 +44,7 @@ SINAL   [+-]
     if (strcmp(yytext, "int") == 0) return INT_T;
     if (strcmp(yytext, "string") == 0) return STRING;
     if (strcmp(yytext, "void") == 0) return VOID;
+    if (strcmp(yytext, "return") == 0) return RET;
 }
 
 
@@ -58,11 +59,11 @@ SINAL   [+-]
     if (strcmp(yytext, "==") == 0) return EQUALS;
     if (strcmp(yytext, "!=") == 0) return NOT_EQUALS;
     if (strcmp(yytext, "<") == 0) return LESS_THAN;
-    if (strcmp(yytext, ">") == 0) return MORE_THAN;
+    if (strcmp(yytext, ">") == 0) return GREATER_THAN;
     if (strcmp(yytext, "<=") == 0) return LESS_EQUAL;
-    if (strcmp(yytext, ">=") == 0) return MORE_EQUAL;
-    if (strcmp(yytext, "&&") == 0) return AND_OP;
-    if (strcmp(yytext, "||") == 0) return OR_OP;
+    if (strcmp(yytext, ">=") == 0) return GREATER_EQUAL;
+    if (strcmp(yytext, "&&") == 0) return AND;
+    if (strcmp(yytext, "||") == 0) return OR;
 }
 
 
