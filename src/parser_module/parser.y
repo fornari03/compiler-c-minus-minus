@@ -8,76 +8,146 @@ extern FILE *yyin;  // Declare yyin for file input
 %}
 
 /* declaração dos tokens que são retornados pelo lexer */
-%token WHILE IF ELSE PRINT CHAR_T INT_T
-%token LPAREN RPAREN
-%token LCRLY RCRLY
-%token INT_LITERAL FLOAT_LITERAL CHAR_LITERAL STRING_LITERAL
-%token IDENTIFIER
-%token ERROR_TOKEN
-%token ';'
+%token ID INTCON CHARCON STRINGCON
+%token VOID CHAR INT EXTERN
+%token MINUS NOT COMMA SEMICLN /*'-' '!' ',' ';'*/
+%token LPAREN RPAREN LBRCKT RBRCKT LCRLY RCRLY /*'(' ')' '[' ']' '{' '}'*/
+%token PLUS MUL DIV /*'+' '*' '/'*/ 
+%token DBEQ NTEQ LTE LT GTE GT /*"==" "!=" "<=" '<' ">=" '>'*/
+%token AND OR /*"&&" "||"*/
+%token EQ /*'='*/
+%token IF ELSE WHILE FOR RETURN /*"if" "else" "while" "for" "return"*/
 
-/* define o tipo de yylval */
-%union {
-    int ival;
-    float fval;
-    char cval;
-    char *sval;
-}
+%nonassoc LOWER_THAN_ELSE
+%nonassoc ELSE
 
-%type <ival> INT_LITERAL
-%type <fval> FLOAT_LITERAL
-%type <cval> CHAR_LITERAL
-%type <sval> STRING_LITERAL IDENTIFIER
-
+%left OR
+%left AND
+%left DBEQ NTEQ
+%left LT GT LTE GTE
+%left PLUS MINUS
+%left MUL DIV
+%right NOT UMINUS
 
 
 %%
-
-program:
-    commands
+prog:
+    |prog opt_dcl_func
+    ;
+    
+opt_dcl_func:
+    dcl SEMICLN
+    |func
     ;
 
-commands:
-    /* empty */
-    | commands statement
+dcl:
+    type var_decl opt_var_decl_seq
+    |EXTERN type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq
+    |type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq
+    |EXTERN ID LPAREN parm_types RPAREN opt_id_parmtypes_seq
+    |ID LPAREN parm_types RPAREN opt_id_parmtypes_seq
     ;
 
-statement:
-      simple_statement ';'
-    | control_statement
+opt_id_parmtypes_seq: |COMMA ID LPAREN parm_types RPAREN ;
+
+var_decl: ID opt_intcon_brckt ;
+
+opt_intcon_brckt: |LBRCKT INTCON RBRCKT ;
+
+type:
+    CHAR
+    |INT
     ;
 
-simple_statement:
-      declaration
-    | expression
-    | print_statement
+parm_types:
+    VOID
+    |type ID opt_brckts opt_parm_types_seq
     ;
 
-declaration:
-      INT_T IDENTIFIER  { free($2); }
-    | CHAR_T IDENTIFIER { free($2); }
+opt_parm_types_seq:
+    |opt_parm_types_seq COMMA type ID opt_brckts
     ;
 
-control_statement:
-      IF LPAREN expression RPAREN commands_block
-    | IF LPAREN expression RPAREN commands_block ELSE commands_block
-    | WHILE LPAREN expression RPAREN commands_block
+opt_brckts: | LBRCKT RBRCKT ;
+
+func:
+    type ID LPAREN parm_types RPAREN LCRLY func_body RCRLY
+    |VOID ID LPAREN parm_types RPAREN LCRLY func_body RCRLY
     ;
 
-commands_block:
-    LCRLY commands RCRLY
+func_body:
+    | func_body type var_decl opt_var_decl_seq SEMICLN star_stmt
     ;
 
-expression:
-      INT_LITERAL              
-    | FLOAT_LITERAL            
-    | CHAR_LITERAL             
-    | STRING_LITERAL           { free($1); }
-    | IDENTIFIER               { free($1); }
+opt_var_decl_seq:
+    |opt_var_decl_seq COMMA var_decl
     ;
 
-print_statement:
-    PRINT LPAREN expression RPAREN
+star_stmt: |star_stmt stmt ;
+
+stmt:
+    IF LPAREN expr RPAREN stmt %prec LOWER_THAN_ELSE
+    |IF LPAREN expr RPAREN stmt ELSE stmt
+    |WHILE LPAREN expr RPAREN stmt
+    |FOR LPAREN opt_assg SEMICLN opt_expr SEMICLN opt_assg RPAREN stmt
+    |RETURN opt_expr
+    ;
+
+opt_expr: |expr ;
+opt_assg: |assg ;
+
+assg:
+    ID opt_assg_expr EQ expr
+    ;
+
+opt_assg_expr:
+    | LBRCKT expr RBRCKT
+    ;
+expr:
+    MINUS expr %prec UMINUS
+    |NOT expr
+    |expr binop expr 
+    |expr relop expr
+    |expr logical_op expr
+    |ID id_expr
+    |LPAREN expr RPAREN
+    |INTCON
+    |CHARCON
+    |STRINGCON
+    ;
+
+id_expr:
+    | LPAREN id_seq RPAREN
+    | LBRCKT expr RBRCKT
+    ;
+
+id_seq:
+    | expr opt_expr_seq
+    ;
+
+opt_expr_seq:
+    | opt_expr_seq COMMA expr
+    ;
+
+binop:
+    PLUS
+    |MINUS
+    |MUL
+    |DIV
+    ;
+
+relop:
+    DBEQ
+    | NTEQ
+    | LTE
+    | LT
+    | GTE
+    | GT
+    ;
+
+logical_op:
+    AND
+    | OR
     ;
 
 %%
