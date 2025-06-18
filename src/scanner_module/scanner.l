@@ -45,6 +45,7 @@ SINAL   [+-]
     if (strcmp(yytext, "string") == 0) return STRING;
     if (strcmp(yytext, "void") == 0) return VOID;
     if (strcmp(yytext, "return") == 0) return RET;
+    if (strcmp(yytext, "extern") == 0) return EXTERN;
 }
 
 
@@ -54,14 +55,14 @@ SINAL   [+-]
     if (strcmp(yytext, "!") == 0) return NOT;
     if (strcmp(yytext, "+") == 0) return PLUS;
     if (strcmp(yytext, "-") == 0) return MINUS;
-    if (strcmp(yytext, "*") == 0) return MULT;
+    if (strcmp(yytext, "*") == 0) return MUL;
     if (strcmp(yytext, "/") == 0) return DIV;
-    if (strcmp(yytext, "==") == 0) return EQUALS;
-    if (strcmp(yytext, "!=") == 0) return NOT_EQUALS;
-    if (strcmp(yytext, "<") == 0) return LESS_THAN;
-    if (strcmp(yytext, ">") == 0) return GREATER_THAN;
-    if (strcmp(yytext, "<=") == 0) return LESS_EQUAL;
-    if (strcmp(yytext, ">=") == 0) return GREATER_EQUAL;
+    if (strcmp(yytext, "==") == 0) return DBEQ;
+    if (strcmp(yytext, "!=") == 0) return NTEQ;
+    if (strcmp(yytext, "<") == 0) return LT;
+    if (strcmp(yytext, ">") == 0) return GT;
+    if (strcmp(yytext, "<=") == 0) return LTE;
+    if (strcmp(yytext, ">=") == 0) return GTE;
     if (strcmp(yytext, "&&") == 0) return AND;
     if (strcmp(yytext, "||") == 0) return OR;
 }
@@ -86,8 +87,21 @@ SINAL   [+-]
     return RCRLY;
 }
 
+"[" {
+    return LBRCKT;
+}
+
+"]" {
+    return RBRCKT;
+}
+
 ";" {
-    return ';';
+    return 'SEMICLN';
+}
+
+
+"," {
+    return 'COMMA';
 }
 
 "print" {
@@ -103,31 +117,31 @@ SINAL   [+-]
 {SINAL}?{DIGITO}+ {
 //    printf("número inteiro (%s)\n", yytext);
     yylval.ival = atoi(yytext);
-    return INT_LITERAL;
+    return INTCON;
 }
 
 {SINAL}?{DIGITO}+"."{DIGITO}* {
 //    printf("float (%s)\n", yytext);
     yylval.fval = atof(yytext);
-    return FLOAT_LITERAL;
+    return FLOATCON;
 }
 
 {LETRA}({LETRA}|{DIGITO}|_)* {
 //    printf("identificador (%s)\n", yytext);
     yylval.sval = strdup(yytext);
-    return IDENTIFIER;
+    return ID;
 }
 
 '([^\\'\n])'|'\\n'|'\\0'|'\\t' {
 //    printf("char (%s)\n", yytext);
     yylval.cval = yytext[1];
-    return CHAR_LITERAL;
+    return CHARCON;
 }
 
 \"[^\n\"]*\" {
 //    printf("string (%s)\n", yytext);
     yylval.sval = strdup(yytext);
-    return STRING_LITERAL;
+    return STRINGCON;
 }
 
 [ \t\n]+ {}  // ignora espaços
