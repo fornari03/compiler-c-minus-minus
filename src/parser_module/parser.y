@@ -1,10 +1,48 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void yyerror(const char *s);
 int yylex(void);
 extern FILE *yyin;  // Declare yyin for file input
+
+typedef struct SymbolTableReg {
+    char *name;     /* identifier name */
+    char *type;     /* type: "int" or "char" */
+    int used;       /* 0 == false; 1 == true */
+    struct SymbolTableReg *nxt;
+} SymbolTableReg;
+
+//typedef struct SymbolTableReg SymbolTableReg;
+SymbolTableReg *table = (SymbolTableReg*) 0;
+int semanticError = 0;
+
+void addSymbol(char *name, char* type, int used) {
+    SymbolTableReg *ptr;
+    ptr = (SymbolTableReg*) malloc(sizeof(SymbolTableReg));
+
+    ptr->name = (char*) malloc(strlen(name)+1);
+    ptr->type = (char*) malloc(strlen(type)+1);
+
+    strcpy(ptr->name, name);
+    strcpy(ptr->type, type);
+    ptr->used = used;
+
+    ptr->nxt = (struct SymbolTableReg*) table;
+    table = ptr;
+}
+
+int inTable(char *name) {
+    SymbolTableReg *ptr = table;
+    while (ptr != (SymbolTableReg*)0) {
+        if (strcmp(ptr->name, name) == 0) return 1;
+
+        ptr = (SymbolTableReg*)ptr->nxt;
+    }
+    return 0;
+}
+
 %}
 
 /* declaração dos tokens que são retornados pelo lexer */
