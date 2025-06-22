@@ -44,17 +44,26 @@ int inTable(char *name) {
 }
 
 %}
+%union {
+    char *sval;
+    float fval;
+    int ival;
+    char cval;
+}
 
 /* declaração dos tokens que são retornados pelo lexer */
-%token ID INTCON CHARCON STRINGCON
-%token VOID CHAR INT EXTERN
+%token <sval> ID STRINGCON
+%token INTCON CHARCON FLOATCON
+%token VOID CHAR_T INT_T EXTERN
 %token MINUS NOT COMMA SEMICLN /*'-' '!' ',' ';'*/
 %token LPAREN RPAREN LBRCKT RBRCKT LCRLY RCRLY /*'(' ')' '[' ']' '{' '}'*/
 %token PLUS MUL DIV /*'+' '*' '/'*/ 
 %token DBEQ NTEQ LTE LT GTE GT /*"==" "!=" "<=" '<' ">=" '>'*/
 %token AND OR /*"&&" "||"*/
-%token EQ /*'='*/
+%token ATR /*'='*/
 %token IF ELSE WHILE FOR RETURN /*"if" "else" "while" "for" "return"*/
+%token ERROR_TOKEN /* erro, n sei como tratar isso aqui */
+%token PRINT /* tbm n sei o que fazer por enquanto, ta aqui pra deixar compilar */
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -70,7 +79,28 @@ int inTable(char *name) {
 
 %%
 prog:
-    |prog opt_dcl_func
+    |prog opt_dcl_func {
+        if (semanticError) {
+            printf("\nSemantic error: some symbol was used without being declared.\n");
+        } else {
+            int hasWarning = 0;
+            
+            int numWarnings = 0;
+            SymbolTableReg *ptr = (SymbolTableReg*) table;
+            while (ptr != (SymbolTableReg*)0) {
+                if (!ptr->used) {
+                    hasWarning = 1;
+                    numWarnings++;
+                }
+            }
+
+            if (hasWarning && numWarnings > 0) {
+                printf("\nWarning: %d variables were declared but not used.\n", numWarnings);
+            }
+
+            printf("\nNo syntax or semantyc errors.\n");
+        }
+    }
     ;
     
 opt_dcl_func:
@@ -93,8 +123,8 @@ var_decl: ID opt_intcon_brckt ;
 opt_intcon_brckt: |LBRCKT INTCON RBRCKT ;
 
 type:
-    CHAR
-    |INT
+    CHAR_T
+    |INT_T
     ;
 
 parm_types:
@@ -135,7 +165,7 @@ opt_expr: |expr ;
 opt_assg: |assg ;
 
 assg:
-    ID opt_assg_expr EQ expr
+    ID opt_assg_expr ATR expr
     ;
 
 opt_assg_expr:

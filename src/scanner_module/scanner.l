@@ -42,9 +42,9 @@ SINAL   [+-]
     if (strcmp(yytext, "for") == 0) return FOR;
     if (strcmp(yytext, "char") == 0) return CHAR_T;
     if (strcmp(yytext, "int") == 0) return INT_T;
-    if (strcmp(yytext, "string") == 0) return STRING;
+    //if (strcmp(yytext, "string") == 0) return STRING;
     if (strcmp(yytext, "void") == 0) return VOID;
-    if (strcmp(yytext, "return") == 0) return RET;
+    if (strcmp(yytext, "return") == 0) return RETURN;
     if (strcmp(yytext, "extern") == 0) return EXTERN;
 }
 
