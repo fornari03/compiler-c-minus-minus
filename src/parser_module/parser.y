@@ -40,6 +40,33 @@ int inTable(char *name) {
     return 0;
 }
 
+void declareSymbol(char *name, int isVar) {
+    if (inTable(name)) {
+        // redeclaration of a variable
+        semanticError = 1;
+        printf("\nSemantic Error: redeclaration of variable or function \"%s\"\n", name);
+    } else {
+        addSymbol(name, !isVar);
+
+        if (isVar)
+            printf("\nVariable \"%s\" declared\n", name);
+        else
+            printf("\nFunction \"%s\" declared\n", name);
+    }
+}
+
+void setUsed(char *name, int used) {
+    SymbolTableReg *ptr = table;
+    while (ptr != (SymbolTableReg*)0) {
+        if (strcmp(ptr->name, name) == 0) {
+            ptr->used = used;
+            return;
+        }
+
+        ptr = (SymbolTableReg*)ptr->nxt;
+    }
+}
+
 %}
 %union {
     char *sval;
@@ -75,8 +102,8 @@ int inTable(char *name) {
 
 
 %%
-prog:
-    |prog opt_dcl_func {
+all:
+    prog {
         if (semanticError) {
             printf("\nSemantic error: some symbol was used without being declared, or was redeclared.\n");
         } else {
@@ -89,6 +116,8 @@ prog:
                     hasWarning = 1;
                     numWarnings++;
                 }
+
+                ptr = ptr->nxt;
             }
 
             if (hasWarning && numWarnings > 0) {
@@ -99,6 +128,10 @@ prog:
         }
     }
     ;
+
+prog:
+    |prog opt_dcl_func
+    ;
     
 opt_dcl_func:
     dcl SEMICLN
@@ -107,24 +140,15 @@ opt_dcl_func:
 
 dcl:
     type var_decl opt_var_decl_seq
-    |EXTERN type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq
-    |type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq
-    |EXTERN ID LPAREN parm_types RPAREN opt_id_parmtypes_seq
-    |ID LPAREN parm_types RPAREN opt_id_parmtypes_seq
+    |EXTERN type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>3, 0); }
+    |type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>2, 0); }
+    |EXTERN ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>2, 0); }
+    |ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>1, 0); }
     ;
 
 opt_id_parmtypes_seq: |COMMA ID LPAREN parm_types RPAREN ;
 
-var_decl: ID opt_intcon_brckt {
-    if (inTable($<sval>1)) {
-        // redeclaration of a variable
-        semanticError = 1;
-        printf("\nSemantic Error: redeclaration of variable or function %s\n", $<sval>1);
-    } else {
-        addSymbol($<sval>1, 0);
-        printf("\nVariable %s declared\n", $<sval>1);
-    }
-};
+var_decl: ID opt_intcon_brckt { declareSymbol($<sval>1, 1); };
 
 opt_intcon_brckt: |LBRCKT INTCON RBRCKT ;
 
@@ -135,18 +159,18 @@ type:
 
 parm_types:
     VOID
-    |type ID opt_brckts opt_parm_types_seq
+    |type ID opt_brckts opt_parm_types_seq { declareSymbol($<sval>2, 1); }
     ;
 
 opt_parm_types_seq:
-    |opt_parm_types_seq COMMA type ID opt_brckts
+    |opt_parm_types_seq COMMA type ID opt_brckts { declareSymbol($<sval>4, 1); }
     ;
 
 opt_brckts: | LBRCKT RBRCKT ;
 
 func:
-    type ID LPAREN parm_types RPAREN LCRLY func_body RCRLY
-    |VOID ID LPAREN parm_types RPAREN LCRLY func_body RCRLY
+    type ID LPAREN parm_types RPAREN LCRLY func_body RCRLY { declareSymbol($<sval>2, 0); }
+    |VOID ID LPAREN parm_types RPAREN LCRLY func_body RCRLY { declareSymbol($<sval>2, 0); }
     ;
 
 func_body:
@@ -164,14 +188,34 @@ stmt:
     |IF LPAREN expr RPAREN stmt ELSE stmt
     |WHILE LPAREN expr RPAREN stmt
     |FOR LPAREN opt_assg SEMICLN opt_expr SEMICLN opt_assg RPAREN stmt
-    |RETURN opt_expr
+    |RETURN opt_expr SEMICLN
+    |assg SEMICLN
+    |ID LPAREN id_seq RPAREN SEMICLN {
+        if (!inTable($<sval>1)) {
+            printf("\nSemantic Error: Variable or function %s used before being declared.\n", $<sval>1);
+            semanticError = 1;
+        } else {
+            printf("\nFunction %s used\n", $<sval>1);
+            setUsed($<sval>1, 1);
+        }
+    }
+    |LCRLY star_stmt RCRLY
+    |SEMICLN
     ;
 
 opt_expr: |expr ;
 opt_assg: |assg ;
 
 assg:
-    ID opt_assg_expr ATR expr
+    ID opt_assg_expr ATR expr {
+        if (!inTable($<sval>1)) {
+            printf("\nSemantic Error: Variable %s used before being declared.\n", $<sval>1);
+            semanticError = 1;
+        } else {
+            printf("\nVariable %s used\n", $<sval>1);
+            setUsed($<sval>1, 1);
+        }
+    }
     ;
 
 opt_assg_expr:
@@ -183,7 +227,15 @@ expr:
     |expr binop expr 
     |expr relop expr
     |expr logical_op expr
-    |ID id_expr
+    |ID id_expr {
+        if (!inTable($<sval>1)) {
+            printf("\nSemantic Error: Variable or function \"%s\" used before being declared.\n", $<sval>1);
+            semanticError = 1;
+        } else {
+            printf("\nVariable or function \"%s\" used\n", $<sval>1);
+            setUsed($<sval>1, 1);
+        }
+    }
     |LPAREN expr RPAREN
     |INTCON
     |CHARCON
