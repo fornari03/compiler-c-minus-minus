@@ -96,12 +96,12 @@ SINAL   [+-]
 }
 
 ";" {
-    return 'SEMICLN';
+    return SEMICLN;
 }
 
 
 "," {
-    return 'COMMA';
+    return COMMA;
 }
 
 "print" {
@@ -144,7 +144,7 @@ SINAL   [+-]
     return STRINGCON;
 }
 
-[ \t\n]+ {}  // ignora espaços
+[ \t\n\r]+ {}  // ignora espaços
 
 . {
     printf("caractere inválido: %s\n", yytext);
