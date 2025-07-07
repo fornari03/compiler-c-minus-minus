@@ -10,3 +10,11 @@ To run scanner:
 
     ./scanner
 ```
+
+To run the parser/semantic analyzer:
+
+```shell
+    make
+
+    ./build/scanner file_to_parse
+```
