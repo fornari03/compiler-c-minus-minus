@@ -1,83 +1,279 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void yyerror(const char *s);
 int yylex(void);
 extern FILE *yyin;  // Declare yyin for file input
-%}
 
-/* declaração dos tokens que são retornados pelo lexer */
-%token WHILE IF ELSE PRINT CHAR_T INT_T
-%token LPAREN RPAREN
-%token LCRLY RCRLY
-%token INT_LITERAL FLOAT_LITERAL CHAR_LITERAL STRING_LITERAL
-%token IDENTIFIER
-%token ERROR_TOKEN
-%token ';'
+typedef struct SymbolTableReg {
+    char *name;     /* identifier name */
+    int used;       /* 0 == false; 1 == true */
+    struct SymbolTableReg *nxt;
+} SymbolTableReg;
 
-/* define o tipo de yylval */
-%union {
-    int ival;
-    float fval;
-    char cval;
-    char *sval;
+//typedef struct SymbolTableReg SymbolTableReg;
+SymbolTableReg *table = (SymbolTableReg*) 0;
+int semanticError = 0;
+
+void addSymbol(char *name, int used) {
+    SymbolTableReg *ptr;
+    ptr = (SymbolTableReg*) malloc(sizeof(SymbolTableReg));
+
+    ptr->name = (char*) malloc(strlen(name)+1);
+
+    strcpy(ptr->name, name);
+    ptr->used = used;
+
+    ptr->nxt = (struct SymbolTableReg*) table;
+    table = ptr;
 }
 
-%type <ival> INT_LITERAL
-%type <fval> FLOAT_LITERAL
-%type <cval> CHAR_LITERAL
-%type <sval> STRING_LITERAL IDENTIFIER
+int inTable(char *name) {
+    SymbolTableReg *ptr = table;
+    while (ptr != (SymbolTableReg*)0) {
+        if (strcmp(ptr->name, name) == 0) return 1;
 
+        ptr = (SymbolTableReg*)ptr->nxt;
+    }
+    return 0;
+}
+
+void declareSymbol(char *name, int isVar) {
+    if (inTable(name)) {
+        // redeclaration of a variable
+        semanticError = 1;
+        printf("\nSemantic Error: redeclaration of variable or function \"%s\"\n", name);
+    } else {
+        addSymbol(name, !isVar);
+
+        if (isVar)
+            printf("\nVariable \"%s\" declared\n", name);
+        else
+            printf("\nFunction \"%s\" declared\n", name);
+    }
+}
+
+void setUsed(char *name, int used) {
+    SymbolTableReg *ptr = table;
+    while (ptr != (SymbolTableReg*)0) {
+        if (strcmp(ptr->name, name) == 0) {
+            ptr->used = used;
+            return;
+        }
+
+        ptr = (SymbolTableReg*)ptr->nxt;
+    }
+}
+
+%}
+%union {
+    char *sval;
+    float fval;
+    int ival;
+    char cval;
+}
+
+/* declaração dos tokens que são retornados pelo lexer */
+%token <sval> ID STRINGCON
+%token INTCON CHARCON FLOATCON
+%token VOID CHAR_T INT_T EXTERN
+%token MINUS NOT COMMA SEMICLN /*'-' '!' ',' ';'*/
+%token LPAREN RPAREN LBRCKT RBRCKT LCRLY RCRLY /*'(' ')' '[' ']' '{' '}'*/
+%token PLUS MUL DIV /*'+' '*' '/'*/ 
+%token DBEQ NTEQ LTE LT GTE GT /*"==" "!=" "<=" '<' ">=" '>'*/
+%token AND OR /*"&&" "||"*/
+%token ATR /*'='*/
+%token IF ELSE WHILE FOR RETURN /*"if" "else" "while" "for" "return"*/
+%token ERROR_TOKEN /* erro, n sei como tratar isso aqui */
+%token PRINT /* tbm n sei o que fazer por enquanto, ta aqui pra deixar compilar */
+
+%nonassoc LOWER_THAN_ELSE
+%nonassoc ELSE
+
+%left OR
+%left AND
+%left DBEQ NTEQ
+%left LT GT LTE GTE
+%left PLUS MINUS
+%left MUL DIV
+%right NOT UMINUS
 
 
 %%
+all:
+    prog {
+        if (semanticError) {
+            printf("\nSemantic error: some symbol was used without being declared, or was redeclared.\n");
+        } else {
+            int hasWarning = 0;
+            
+            int numWarnings = 0;
+            SymbolTableReg *ptr = (SymbolTableReg*) table;
+            while (ptr != (SymbolTableReg*)0) {
+                if (!ptr->used) {
+                    hasWarning = 1;
+                    numWarnings++;
+                }
 
-program:
-    commands
+                ptr = ptr->nxt;
+            }
+
+            if (hasWarning && numWarnings > 0) {
+                printf("\nWarning: %d variables were declared but not used.\n", numWarnings);
+            }
+
+            printf("\nNo syntax or semantyc errors.\n");
+        }
+    }
     ;
 
-commands:
-    /* empty */
-    | commands statement
+prog:
+    |prog opt_dcl_func
+    ;
+    
+opt_dcl_func:
+    dcl SEMICLN
+    |func
     ;
 
-statement:
-      simple_statement ';'
-    | control_statement
+dcl:
+    type var_decl opt_var_decl_seq
+    |EXTERN type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>3, 0); }
+    |type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>2, 0); }
+    |EXTERN ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>2, 0); }
+    |ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>1, 0); }
     ;
 
-simple_statement:
-      declaration
-    | expression
-    | print_statement
+opt_id_parmtypes_seq: |COMMA ID LPAREN parm_types RPAREN ;
+
+var_decl: ID opt_intcon_brckt { declareSymbol($<sval>1, 1); };
+
+opt_intcon_brckt: |LBRCKT INTCON RBRCKT ;
+
+type:
+    CHAR_T
+    |INT_T
     ;
 
-declaration:
-      INT_T IDENTIFIER  { free($2); }
-    | CHAR_T IDENTIFIER { free($2); }
+parm_types:
+    VOID
+    |type ID opt_brckts opt_parm_types_seq { declareSymbol($<sval>2, 1); }
     ;
 
-control_statement:
-      IF LPAREN expression RPAREN commands_block
-    | IF LPAREN expression RPAREN commands_block ELSE commands_block
-    | WHILE LPAREN expression RPAREN commands_block
+opt_parm_types_seq:
+    |opt_parm_types_seq COMMA type ID opt_brckts { declareSymbol($<sval>4, 1); }
     ;
 
-commands_block:
-    LCRLY commands RCRLY
+opt_brckts: | LBRCKT RBRCKT ;
+
+func:
+    type ID LPAREN parm_types RPAREN LCRLY func_body RCRLY { declareSymbol($<sval>2, 0); }
+    |VOID ID LPAREN parm_types RPAREN LCRLY func_body RCRLY { declareSymbol($<sval>2, 0); }
     ;
 
-expression:
-      INT_LITERAL              
-    | FLOAT_LITERAL            
-    | CHAR_LITERAL             
-    | STRING_LITERAL           { free($1); }
-    | IDENTIFIER               { free($1); }
+func_body:
+    | func_body type var_decl opt_var_decl_seq SEMICLN star_stmt
     ;
 
-print_statement:
-    PRINT LPAREN expression RPAREN
+opt_var_decl_seq:
+    |opt_var_decl_seq COMMA var_decl
+    ;
+
+star_stmt: |star_stmt stmt ;
+
+stmt:
+    IF LPAREN expr RPAREN stmt %prec LOWER_THAN_ELSE
+    |IF LPAREN expr RPAREN stmt ELSE stmt
+    |WHILE LPAREN expr RPAREN stmt
+    |FOR LPAREN opt_assg SEMICLN opt_expr SEMICLN opt_assg RPAREN stmt
+    |RETURN opt_expr SEMICLN
+    |assg SEMICLN
+    |ID LPAREN id_seq RPAREN SEMICLN {
+        if (!inTable($<sval>1)) {
+            printf("\nSemantic Error: Variable or function %s used before being declared.\n", $<sval>1);
+            semanticError = 1;
+        } else {
+            printf("\nFunction %s used\n", $<sval>1);
+            setUsed($<sval>1, 1);
+        }
+    }
+    |LCRLY star_stmt RCRLY
+    |SEMICLN
+    ;
+
+opt_expr: |expr ;
+opt_assg: |assg ;
+
+assg:
+    ID opt_assg_expr ATR expr {
+        if (!inTable($<sval>1)) {
+            printf("\nSemantic Error: Variable %s used before being declared.\n", $<sval>1);
+            semanticError = 1;
+        } else {
+            printf("\nVariable %s used\n", $<sval>1);
+            setUsed($<sval>1, 1);
+        }
+    }
+    ;
+
+opt_assg_expr:
+    | LBRCKT expr RBRCKT
+    ;
+expr:
+    MINUS expr %prec UMINUS
+    |NOT expr
+    |expr binop expr 
+    |expr relop expr
+    |expr logical_op expr
+    |ID id_expr {
+        if (!inTable($<sval>1)) {
+            printf("\nSemantic Error: Variable or function \"%s\" used before being declared.\n", $<sval>1);
+            semanticError = 1;
+        } else {
+            printf("\nVariable or function \"%s\" used\n", $<sval>1);
+            setUsed($<sval>1, 1);
+        }
+    }
+    |LPAREN expr RPAREN
+    |INTCON
+    |CHARCON
+    |STRINGCON
+    ;
+
+id_expr:
+    | LPAREN id_seq RPAREN
+    | LBRCKT expr RBRCKT
+    ;
+
+id_seq:
+    | expr opt_expr_seq
+    ;
+
+opt_expr_seq:
+    | opt_expr_seq COMMA expr
+    ;
+
+binop:
+    PLUS
+    |MINUS
+    |MUL
+    |DIV
+    ;
+
+relop:
+    DBEQ
+    | NTEQ
+    | LTE
+    | LT
+    | GTE
+    | GT
+    ;
+
+logical_op:
+    AND
+    | OR
     ;
 
 %%

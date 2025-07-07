@@ -34,14 +34,40 @@ SINAL   [+-]
 
 <COMENTARIO>. {} // ignora o resto
 
-"while"|"if"|"else"|"char"|"int" {
+"while"|"if"|"else"|"for"|"char"|"int"|"string"|"void"|"return" {
 //    printf("palavra reservada (%s)\n", yytext);
     if (strcmp(yytext, "while") == 0) return WHILE;
     if (strcmp(yytext, "if") == 0) return IF;
     if (strcmp(yytext, "else") == 0) return ELSE;
+    if (strcmp(yytext, "for") == 0) return FOR;
     if (strcmp(yytext, "char") == 0) return CHAR_T;
     if (strcmp(yytext, "int") == 0) return INT_T;
+    //if (strcmp(yytext, "string") == 0) return STRING;
+    if (strcmp(yytext, "void") == 0) return VOID;
+    if (strcmp(yytext, "return") == 0) return RETURN;
+    if (strcmp(yytext, "extern") == 0) return EXTERN;
 }
+
+
+"="|"!"|"+"|"-"|"*"|"/"|"=="|"!="|"<"|">"|"<="|">="|"&&"|"||" {
+//      printf("operador (%s)\n", yytext);
+    if (strcmp(yytext, "=") == 0) return ATR;
+    if (strcmp(yytext, "!") == 0) return NOT;
+    if (strcmp(yytext, "+") == 0) return PLUS;
+    if (strcmp(yytext, "-") == 0) return MINUS;
+    if (strcmp(yytext, "*") == 0) return MUL;
+    if (strcmp(yytext, "/") == 0) return DIV;
+    if (strcmp(yytext, "==") == 0) return DBEQ;
+    if (strcmp(yytext, "!=") == 0) return NTEQ;
+    if (strcmp(yytext, "<") == 0) return LT;
+    if (strcmp(yytext, ">") == 0) return GT;
+    if (strcmp(yytext, "<=") == 0) return LTE;
+    if (strcmp(yytext, ">=") == 0) return GTE;
+    if (strcmp(yytext, "&&") == 0) return AND;
+    if (strcmp(yytext, "||") == 0) return OR;
+}
+
+
 
 "(" {
 //    printf("abre parênteses\n");
@@ -61,8 +87,21 @@ SINAL   [+-]
     return RCRLY;
 }
 
+"[" {
+    return LBRCKT;
+}
+
+"]" {
+    return RBRCKT;
+}
+
 ";" {
-    return ';';
+    return SEMICLN;
+}
+
+
+"," {
+    return COMMA;
 }
 
 "print" {
@@ -78,34 +117,34 @@ SINAL   [+-]
 {SINAL}?{DIGITO}+ {
 //    printf("número inteiro (%s)\n", yytext);
     yylval.ival = atoi(yytext);
-    return INT_LITERAL;
+    return INTCON;
 }
 
 {SINAL}?{DIGITO}+"."{DIGITO}* {
 //    printf("float (%s)\n", yytext);
     yylval.fval = atof(yytext);
-    return FLOAT_LITERAL;
+    return FLOATCON;
 }
 
 {LETRA}({LETRA}|{DIGITO}|_)* {
 //    printf("identificador (%s)\n", yytext);
     yylval.sval = strdup(yytext);
-    return IDENTIFIER;
+    return ID;
 }
 
 '([^\\'\n])'|'\\n'|'\\0'|'\\t' {
 //    printf("char (%s)\n", yytext);
     yylval.cval = yytext[1];
-    return CHAR_LITERAL;
+    return CHARCON;
 }
 
 \"[^\n\"]*\" {
 //    printf("string (%s)\n", yytext);
     yylval.sval = strdup(yytext);
-    return STRING_LITERAL;
+    return STRINGCON;
 }
 
-[ \t\n]+ {}  // ignora espaços
+[ \t\n\r]+ {}  // ignora espaços
 
 . {
     printf("caractere inválido: %s\n", yytext);
