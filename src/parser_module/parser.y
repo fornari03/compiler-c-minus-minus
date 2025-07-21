@@ -70,14 +70,13 @@ void setUsed(char *name, int used) {
 %}
 %union {
     char *sval;
-    float fval;
     int ival;
     char cval;
 }
 
 /* declaração dos tokens que são retornados pelo lexer */
 %token <sval> ID STRINGCON
-%token INTCON CHARCON FLOATCON
+%token INTCON CHARCON
 %token VOID CHAR_T INT_T EXTERN
 %token MINUS NOT COMMA SEMICLN /*'-' '!' ',' ';'*/
 %token LPAREN RPAREN LBRCKT RBRCKT LCRLY RCRLY /*'(' ')' '[' ']' '{' '}'*/
@@ -201,7 +200,7 @@ stmt:
     }
     |LCRLY star_stmt RCRLY
     |SEMICLN
-    ;
+        ;
 
 opt_expr: |expr ;
 opt_assg: |assg ;

@@ -113,11 +113,6 @@ SINAL   [+-]
     return INTCON;
 }
 
-{SINAL}?{DIGITO}+"."{DIGITO}* {
-    yylval.fval = atof(yytext);
-    return FLOATCON;
-}
-
 {LETRA}({LETRA}|{DIGITO}|_)* {
     yylval.sval = strdup(yytext);
     return ID;
