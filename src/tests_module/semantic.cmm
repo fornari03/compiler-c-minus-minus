@@ -1,0 +1,12 @@
+int main(void) {
+    int elem, result, i;
+    char x;
+
+    elem = 5;
+    result = 1;
+    i = 1;
+    while (i <= elem) {
+        result = result * i;
+        i = i + 1;
+    }
+}

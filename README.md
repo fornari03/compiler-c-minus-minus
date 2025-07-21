@@ -1,4 +1,15 @@
-# Projeto de Compilador Didático
+# compiler-c-minus-minus
+Repository for an educational implementation of a C-- compiler
+
+To run scanner:
+
+```shell
+    make
+
+    cd build
+
+    ./scanner
+```
 
 Este é um projeto de um compilador para uma linguagem de programação simples e didática.
 O compilador foi desenvolvido em C, utilizando as ferramentas Flex para a análise léxica e
@@ -49,3 +60,21 @@ make menu
 make clean
 ```
   
+
+To run scanner:
+
+```shell
+    make
+
+    cd build
+
+    ./scanner
+```
+
+To run the parser/semantic analyzer:
+
+```shell
+    make
+
+    ./build/parser file_to_parse
+```
