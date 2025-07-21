@@ -1,5 +1,6 @@
-int main {
-    int i = 3;
+int main(void) {
+    int i;
+    i = 3;
     while (i > 0) {
         print(i);
         i = i - 1;

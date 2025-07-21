@@ -1,6 +1,8 @@
-int main {
-    int n = 5;
-    int fact = 1;
+int main(void) {
+    int n;
+    n = 5;
+    int fact;
+    fact = 1;
 
     while (n > 0) {
         fact = fact * n;

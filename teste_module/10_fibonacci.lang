@@ -1,9 +1,13 @@
-int main {
-    int n = 8; /* Queremos o 8º número de Fibonacci */
-    int a = 0;
-    int b = 1;
+int main(void) {
+    int n;
+    n = 8; /* Queremos o 8º número de Fibonacci */
+    int a;
+    a = 0;
+    int b;
+    b = 1;
     int temp;
-    int contador = 1;
+    int contador;
+    contador = 1;
 
     while (contador < n) {
         temp = a + b;
@@ -13,6 +17,5 @@ int main {
     }
     
     /* O 8º número de Fibonacci é 21 */
-    print(b); 
-    println;
+    print(b);
 }

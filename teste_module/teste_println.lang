@@ -1,8 +1,0 @@
-int main {
-    print(1);
-    println;
-    print(2);
-    println;
-    println;
-    print(3);
-}

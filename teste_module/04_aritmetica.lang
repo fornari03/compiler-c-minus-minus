@@ -1,6 +1,8 @@
-int main {
-    int a = 20;
-    int b = 5;
+int main(void) {
+    int a;
+    a = 20;
+    int b;
+    b = 5;
     print(a + b); /* 25 */
     print(a - b); /* 15 */
     print(a * b); /* 100 */
