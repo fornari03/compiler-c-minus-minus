@@ -279,31 +279,36 @@ logical_op:
 %%
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Erro de sintaxe: %s\n", s);
+    fprintf(stderr, "Erro: %s\n", s);
 }
 
 int main(int argc, char *argv[]) {
-    cg = init_codegen();
-    FILE *file = argc > 1 ? fopen(argv[1], "r") : stdin;
+    FILE *file = NULL;
     
-    if (!file) {
-        fprintf(stderr, "Erro ao abrir arquivo: %s\n", argv[1]);
-        return 1;
-    }
-    
-    yyin = file;
-    int parse_result = yyparse();
-    
-    if (file != stdin) fclose(file);
-    
-    if (parse_result == 0) {
-        printf("=== Código de 3 Endereços Gerado ===\n%s\n", cg->code);
-        printf("=== Código da VM Traduzido ===\n");
-        translate_to_vm(cg);
+    if (argc > 1) {
+        file = fopen(argv[1], "r");
+        if (!file) {
+            fprintf(stderr, "Error: Cannot open file '%s'\n", argv[1]);
+            return 1;
+        }
+        yyin = file;
+        printf("Parsing file: %s\n", argv[1]);
     } else {
-        printf("\nCompilação falhou devido a erros.\n");
+        printf("Reading from stdin (Ctrl+D to end):\n");
+        yyin = stdin;
     }
     
-    free_codegen(cg);
-    return parse_result;
+    int result = yyparse();
+    
+    if (file) {
+        fclose(file);
+    }
+    
+    if (result == 0) {
+        printf("Parsing completed successfully!\n");
+    } else {
+        printf("Parsing failed with errors.\n");
+    }
+    
+    return result;
 }

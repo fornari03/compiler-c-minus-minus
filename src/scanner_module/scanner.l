@@ -1,38 +1,21 @@
 %{
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "parser.tab.h"
+    #include <stdio.h>
+    #include <string.h>
+    #include <stdlib.h>  // for atoi(), atof()
+
+    #include "parser.tab.h" 
 %}
 
-%option noyywrap
-
+/* definitions */
 DIGITO  [0-9]
 LETRA   [a-zA-Z]
+SINAL   [+-]
 
+/* estado exclusivo */
 %x COMENTARIO
 
 %%
 
-"/*"            BEGIN(COMENTARIO);
-<COMENTARIO>"*/" BEGIN(INITIAL);
-<COMENTARIO>.|\n {}
-
-"main"          {return MAIN;}
-"while"         {return WHILE;}
-"if"            {return IF;}
-"else"          {return ELSE;}
-"char"          {return CHAR_T;}
-"int"           {return INT_T;}
-"print"         {return PRINT;}
-"println"       {return PRINTLN;}
-
-"=="            {return EQ;}
-"!="            {return NE;}
-"<="            {return LE;}
-">="            {return GE;}
-"<"             {return LT;}
-">"             {return GT;}
 "/*" {
     BEGIN(COMENTARIO);
 }
@@ -86,19 +69,6 @@ LETRA   [a-zA-Z]
 
 
 
-"+"             {return '+';}
-"-"             {return '-';}
-"*"             {return '*';}
-"/"             {return '/';}
-"="             {return '=';}
-";"             {return ';';}
-"("             {return LPAREN;}
-")"             {return RPAREN;}
-"{"             {return LCRLY;}
-"}"             {return RCRLY;}
-
-{DIGITO}+       { yylval.ival = atoi(yytext); return INT_LITERAL; }
-{LETRA}({LETRA}|{DIGITO}|_)* { yylval.sval = strdup(yytext); return IDENTIFIER; }
 "(" {
 //    printf("abre parênteses\n");
     return LPAREN;
@@ -162,14 +132,12 @@ LETRA   [a-zA-Z]
     return ID;
 }
 
-[ \t\n]+        {}
 '([^\\'\n])'|'\\n'|'\\0'|'\\t' {
 //    printf("char (%s)\n", yytext);
     yylval.cval = yytext[1];
     return CHARCON;
 }
 
-.               { printf("Caractere invalido: %s\n", yytext); return ERROR_TOKEN; }
 \"[^\n\"]*\" {
 //    printf("string (%s)\n", yytext);
     yylval.sval = strdup(yytext);
@@ -184,7 +152,6 @@ LETRA   [a-zA-Z]
 }
 
 %%
-
 // retirar comentário para usar o scanner isoladamente (sem o parser).
 /*
 int main() {
