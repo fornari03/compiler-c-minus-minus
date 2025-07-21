@@ -1,16 +1,6 @@
 # compiler-c-minus-minus
 Repository for an educational implementation of a C-- compiler
 
-To run scanner:
-
-```shell
-    make
-
-    cd build
-
-    ./scanner
-```
-
 Este é um projeto de um compilador para uma linguagem de programação simples e didática.
 O compilador foi desenvolvido em C, utilizando as ferramentas Flex para a análise léxica e
 Bison para a análise sintática. Ele traduz o código-fonte para um conjunto de instruções
@@ -61,12 +51,12 @@ make clean
 ```
   
 
-To run scanner:
+To run scanner separately:
 
 ```shell
-    make
+    flex src/scanner_module/scanner_alone.l 
 
-    cd build
+    gcc lex.yy.c -o scanner -lfl
 
     ./scanner
 ```
