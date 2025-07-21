@@ -1,8 +1,0 @@
-int main {
-    int a = 20;
-    int b = 5;
-    print(a + b); /* 25 */
-    print(a - b); /* 15 */
-    print(a * b); /* 100 */
-    print(a / b); /* 4 */
-}

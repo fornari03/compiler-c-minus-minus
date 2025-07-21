@@ -1,6 +1,0 @@
-int main {
-    int valor = 10;
-    print(valor); /* Deve imprimir 10 */
-    valor = 99;
-    print(valor); /* Deve imprimir 99 */
-}
