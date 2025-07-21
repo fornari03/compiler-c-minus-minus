@@ -2,26 +2,27 @@
 # Variáveis de Configuração
 # ====================================================================
 CC = gcc
-CFLAGS = -Wall -Wextra -g -Wno-unused -Isrc
+# ALTERADO: CFLAGS agora inclui todos os submódulos para os ficheiros .h
+CFLAGS = -Wall -Wextra -g -Wno-unused -Isrc/code_module -Isrc/parser_module -Isrc/scanner_module
 LEX = flex
 YACC = bison
 YFLAGS = -d -Wno-counterexamples
 
-# Estrutura de Pastas
-SRC_DIR = src
+# --- ESTRUTURA DE PASTAS ---
+# ALTERADO: VPATH agora inclui todos os submódulos dentro de src
+VPATH = src/code_module:src/parser_module:src/scanner_module:build
+
+BUILD_DIR = build
 TEST_DIR = teste_module
-BUILD_DIR = obj
 
-VPATH = $(SRC_DIR):$(BUILD_DIR)
-
-# Ficheiros e Executável
+# --- FICHEIROS E EXECUTÁVEL ---
 TARGET = meucompilador
 OBJ_NAMES = parser.tab.o lex.yy.o tradutor.o geracode.o
 OBJ = $(addprefix $(BUILD_DIR)/, $(OBJ_NAMES))
 
-# Testes
+# --- TESTES ---
 TEST_FILES = $(wildcard $(TEST_DIR)/*.lang)
-TEST_FILE ?= $(TEST_DIR)/teste_01_declaracao_simples.lang
+TEST_FILE ?= $(TEST_DIR)/teste.lang
 
 # ====================================================================
 # Alvos Principais
@@ -57,11 +58,13 @@ menu: $(TARGET)
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
-$(BUILD_DIR)/parser.tab.c $(BUILD_DIR)/parser.tab.h: parser.y | $(BUILD_DIR)
-	$(YACC) $(YFLAGS) $(SRC_DIR)/parser.y -o $(BUILD_DIR)/parser.tab.c
+# ALTERADO: Caminho explícito para parser.y
+$(BUILD_DIR)/parser.tab.c $(BUILD_DIR)/parser.tab.h: src/parser_module/parser.y | $(BUILD_DIR)
+	$(YACC) $(YFLAGS) $< -o $(BUILD_DIR)/parser.tab.c
 
-$(BUILD_DIR)/lex.yy.c: scanner.l $(BUILD_DIR)/parser.tab.h | $(BUILD_DIR)
-	$(LEX) -o $(BUILD_DIR)/lex.yy.c $(SRC_DIR)/scanner.l
+# ALTERADO: Caminho explícito para scanner.l
+$(BUILD_DIR)/lex.yy.c: src/scanner_module/scanner.l $(BUILD_DIR)/parser.tab.h | $(BUILD_DIR)
+	$(LEX) -o $(BUILD_DIR)/lex.yy.c $<
 
 $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -69,7 +72,6 @@ $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 # ====================================================================
 # Alvos Utilitários
 # ====================================================================
-# CORRIGIDO: O 'clean' agora apaga a pasta 'obj' inteira e o executável
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f $(TARGET)

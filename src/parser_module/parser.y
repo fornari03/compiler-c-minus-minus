@@ -1,40 +1,39 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "geracode.h"
 
 void yyerror(const char *s);
 int yylex(void);
-extern FILE *yyin;  // Declare yyin for file input
+extern FILE *yyin;
+void translate_to_vm(CodeGenerator* cg);
+
+CodeGenerator* cg;
 %}
 
-/* declaração dos tokens que são retornados pelo lexer */
-%token WHILE IF ELSE PRINT CHAR_T INT_T
-%token LPAREN RPAREN
-%token LCRLY RCRLY
-%token INT_LITERAL FLOAT_LITERAL CHAR_LITERAL STRING_LITERAL
-%token IDENTIFIER
-%token ERROR_TOKEN
-%token ';'
-
-/* define o tipo de yylval */
 %union {
     int ival;
-    float fval;
-    char cval;
     char *sval;
 }
 
-%type <ival> INT_LITERAL
-%type <fval> FLOAT_LITERAL
-%type <cval> CHAR_LITERAL
-%type <sval> STRING_LITERAL IDENTIFIER
+%token <sval> IDENTIFIER
+%token <ival> INT_LITERAL
 
+%token WHILE IF ELSE PRINT PRINTLN CHAR_T INT_T MAIN ERROR_TOKEN
+%token LPAREN RPAREN LCRLY RCRLY EQ NE LT LE GT GE
 
+%type <sval> expression condition
+%type <ival> type
+
+%left '+' '-'
+%left '*' '/'
+%nonassoc '='
 
 %%
 
 program:
-    commands
+    INT_T MAIN LCRLY commands RCRLY {}
     ;
 
 commands:
@@ -43,76 +42,149 @@ commands:
     ;
 
 statement:
-      simple_statement ';'
+    simple_statement ';'
     | control_statement
     ;
 
+/* GRAMÁTICA CORRIGIDA: 'simple_statement' é mais específico agora */
 simple_statement:
-      declaration
-    | expression
+    declaration
+    | assignment
     | print_statement
+    | println_statement
+    ;
+
+/* NOVA REGRA: 'assignment' para resolver a ambiguidade */
+assignment:
+    IDENTIFIER '=' expression {
+        emit(cg, "%s = %s", $1, $3);
+    }
     ;
 
 declaration:
-      INT_T IDENTIFIER  { free($2); }
-    | CHAR_T IDENTIFIER { free($2); }
+    type IDENTIFIER '=' expression {
+        add_symbol(cg, $2, $1);
+        emit(cg, "%s = %s", $2, $4);
+    }
+    | type IDENTIFIER {
+        add_symbol(cg, $2, $1);
+    }
     ;
 
-control_statement:
-      IF LPAREN expression RPAREN commands_block
-    | IF LPAREN expression RPAREN commands_block ELSE commands_block
-    | WHILE LPAREN expression RPAREN commands_block
-    ;
-
-commands_block:
-    LCRLY commands RCRLY
-    ;
-
-expression:
-      INT_LITERAL              
-    | FLOAT_LITERAL            
-    | CHAR_LITERAL             
-    | STRING_LITERAL           { free($1); }
-    | IDENTIFIER               { free($1); }
+type:
+    INT_T { $$ = 0; }
+    | CHAR_T { $$ = 1; }
     ;
 
 print_statement:
-    PRINT LPAREN expression RPAREN
+    PRINT LPAREN expression RPAREN {
+        emit(cg, "OUT %s", $3);
+    }
+    ;
+
+println_statement:
+    PRINTLN {
+        emit(cg, "OUT_NL");
+    }
+    ;
+
+control_statement:
+    WHILE {
+            $<sval>$ = (char*)malloc(32);
+            char* start_label = new_label(cg);
+            char* end_label = new_label(cg);
+            sprintf($<sval>$, "%s %s", start_label, end_label);
+            emit(cg, "%s:", start_label);
+        }
+    LPAREN condition RPAREN {
+            char start_label[16], end_label[16];
+            sscanf($<sval>2, "%s %s", start_label, end_label);
+            emit(cg, "JLE %s, %s", $4, end_label);
+        }
+    LCRLY commands RCRLY {
+            char start_label[16], end_label[16];
+            sscanf($<sval>2, "%s %s", start_label, end_label);
+            emit(cg, "JMP %s", start_label);
+            emit(cg, "%s:", end_label);
+        }
+    ;
+
+condition:
+    expression GT expression {
+        char* temp = new_temp(cg);
+        emit(cg, "%s = %s - %s", temp, $1, $3);
+        $$ = temp;
+    }
+    | expression LT expression {
+        char* temp = new_temp(cg);
+        emit(cg, "%s = %s - %s", temp, $3, $1);
+        $$ = temp;
+    }
+    ;
+
+/* Expressões não incluem mais a atribuição, que agora é um 'statement' */
+expression:
+    INT_LITERAL {
+        char* val = malloc(32);
+        sprintf(val, "%d", $1);
+        $$ = val;
+    }
+    | IDENTIFIER {
+        $$ = strdup($1);
+    }
+    | expression '+' expression {
+        char* temp = new_temp(cg);
+        emit(cg, "%s = %s + %s", temp, $1, $3);
+        $$ = temp;
+    }
+    | expression '-' expression {
+        char* temp = new_temp(cg);
+        emit(cg, "%s = %s - %s", temp, $1, $3);
+        $$ = temp;
+    }
+    | expression '*' expression {
+        char* temp = new_temp(cg);
+        emit(cg, "%s = %s * %s", temp, $1, $3);
+        $$ = temp;
+    }
+    | expression '/' expression {
+        char* temp = new_temp(cg);
+        emit(cg, "%s = %s / %s", temp, $1, $3);
+        $$ = temp;
+    }
+    | LPAREN expression RPAREN {
+        $$ = $2;
+    }
     ;
 
 %%
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Erro: %s\n", s);
+    fprintf(stderr, "Erro de sintaxe: %s\n", s);
 }
 
 int main(int argc, char *argv[]) {
-    FILE *file = NULL;
+    cg = init_codegen();
+    FILE *file = argc > 1 ? fopen(argv[1], "r") : stdin;
     
-    if (argc > 1) {
-        file = fopen(argv[1], "r");
-        if (!file) {
-            fprintf(stderr, "Error: Cannot open file '%s'\n", argv[1]);
-            return 1;
-        }
-        yyin = file;
-        printf("Parsing file: %s\n", argv[1]);
+    if (!file) {
+        fprintf(stderr, "Erro ao abrir arquivo: %s\n", argv[1]);
+        return 1;
+    }
+    
+    yyin = file;
+    int parse_result = yyparse();
+    
+    if (file != stdin) fclose(file);
+    
+    if (parse_result == 0) {
+        printf("=== Código de 3 Endereços Gerado ===\n%s\n", cg->code);
+        printf("=== Código da VM Traduzido ===\n");
+        translate_to_vm(cg);
     } else {
-        printf("Reading from stdin (Ctrl+D to end):\n");
-        yyin = stdin;
+        printf("\nCompilação falhou devido a erros.\n");
     }
     
-    int result = yyparse();
-    
-    if (file) {
-        fclose(file);
-    }
-    
-    if (result == 0) {
-        printf("Parsing completed successfully!\n");
-    } else {
-        printf("Parsing failed with errors.\n");
-    }
-    
-    return result;
+    free_codegen(cg);
+    return parse_result;
 }
