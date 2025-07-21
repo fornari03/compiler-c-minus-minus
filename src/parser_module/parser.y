@@ -86,7 +86,7 @@ void setUsed(char *name, int used) {
 %token ATR /*'='*/
 %token IF ELSE WHILE FOR RETURN /*"if" "else" "while" "for" "return"*/
 %token ERROR_TOKEN /* erro, n sei como tratar isso aqui */
-%token PRINT /* tbm n sei o que fazer por enquanto, ta aqui pra deixar compilar */
+%token PRINT 
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -173,7 +173,7 @@ func:
     ;
 
 func_body:
-    | func_body type var_decl opt_var_decl_seq SEMICLN star_stmt
+    star_stmt
     ;
 
 opt_var_decl_seq:
@@ -200,6 +200,8 @@ stmt:
     }
     |LCRLY star_stmt RCRLY
     |SEMICLN
+    |PRINT LPAREN expr RPAREN SEMICLN
+    |dcl SEMICLN
         ;
 
 opt_expr: |expr ;

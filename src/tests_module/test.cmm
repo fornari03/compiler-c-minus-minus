@@ -2,26 +2,27 @@
 int x;
 char c;
 
-print("Starting program");
+int main(void) {
+    print("Starting program");
 
-if (42) {
-    int y;
-    print(y);
-    print('a');
-}
-
-while (123) {
-    char z;
-    if (456) {
-        print("hello world");
-    } else {
-        print(789);
+    if (42) {
+        int y;
+        print(y);
+        print('a');
     }
-}
 
-/* Test various print statements */
-print(x);
-print(42);
-print(3.14);
-print('n');
-print("test string");
+    while (123) {
+        char z;
+        if (456) {
+            print("hello world");
+        } else {
+            print(789);
+        }
+    }
+
+    /* Test various print statements */
+    print(x);
+    print(42);
+    print('n');
+    print("test string");
+}
