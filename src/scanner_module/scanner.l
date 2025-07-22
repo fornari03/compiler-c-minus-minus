@@ -104,6 +104,10 @@ SINAL   [+-]
     return PRINT;
 }
 
+"input" {
+    return INPUT;
+}
+
 {DIGITO}+({LETRA}|_)+({LETRA}|{DIGITO}|_)* {
     printf("Erro léxico: %s\n", yytext);
     printf("Scanner failed with errors.\n");

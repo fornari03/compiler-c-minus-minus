@@ -1,6 +1,7 @@
 int main(void) {
     int elem, result, i;
-    char x;
+    char x, y;
+    y = input();
 
     elem = 5;
     result = 1;

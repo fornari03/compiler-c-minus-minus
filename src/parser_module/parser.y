@@ -85,7 +85,7 @@ void setUsed(char *name, int used) {
 %token AND OR /*"&&" "||"*/
 %token ATR /*'='*/
 %token IF ELSE WHILE FOR RETURN /*"if" "else" "while" "for" "return"*/
-%token PRINT 
+%token PRINT INPUT
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -237,6 +237,7 @@ expr:
         }
     }
     |LPAREN expr RPAREN
+    |INPUT LPAREN RPAREN
     |INTCON
     |CHARCON
     |STRINGCON
