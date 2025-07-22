@@ -85,7 +85,6 @@ void setUsed(char *name, int used) {
 %token AND OR /*"&&" "||"*/
 %token ATR /*'='*/
 %token IF ELSE WHILE FOR RETURN /*"if" "else" "while" "for" "return"*/
-%token ERROR_TOKEN /* erro, n sei como tratar isso aqui */
 %token PRINT 
 
 %nonassoc LOWER_THAN_ELSE

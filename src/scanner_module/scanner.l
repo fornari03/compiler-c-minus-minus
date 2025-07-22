@@ -27,8 +27,9 @@ SINAL   [+-]
 }
 
 <COMENTARIO><<EOF>> {
-    printf("erro: comentário não fechado\n");
-    return ERROR_TOKEN;
+    printf("Erro: comentário não fechado.\n");
+    printf("Scanner failed with errors.\n");
+    exit(1);
 }
 
 <COMENTARIO>. {} // ignora o resto
@@ -104,8 +105,9 @@ SINAL   [+-]
 }
 
 {DIGITO}+({LETRA}|_)+({LETRA}|{DIGITO}|_)* {
-    printf("Erro léxico: (%s)\n", yytext);
-    return ERROR_TOKEN;
+    printf("Erro léxico: %s\n", yytext);
+    printf("Scanner failed with errors.\n");
+    exit(1);
 }
 
 {SINAL}?{DIGITO}+ {
@@ -132,7 +134,8 @@ SINAL   [+-]
 
 . {
     printf("Erro léxico: caractere inválido: %s\n", yytext);
-    return ERROR_TOKEN;
+    printf("Scanner failed with errors.\n");
+    exit(1);
 }
 
 %%
