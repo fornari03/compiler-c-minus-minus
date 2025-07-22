@@ -87,6 +87,10 @@ void setUsed(char *name, int used) {
     }
 }
 
+void translate_to_vm(CodeGenerator* cg);
+CodeGenerator* cg;
+int inv_relop;
+
 %}
 %union {
     char *sval;
@@ -96,7 +100,8 @@ void setUsed(char *name, int used) {
 
 /* declaração dos tokens que são retornados pelo lexer */
 %token <sval> ID STRINGCON
-%token INTCON CHARCON
+%token <ival> INTCON 
+%token <cval> CHARCON
 %token VOID CHAR_T INT_T EXTERN
 %token MINUS NOT COMMA SEMICLN /*'-' '!' ',' ';'*/
 %token LPAREN RPAREN LBRCKT RBRCKT LCRLY RCRLY /*'(' ')' '[' ']' '{' '}'*/
@@ -107,6 +112,7 @@ void setUsed(char *name, int used) {
 %token IF ELSE WHILE FOR RETURN /*"if" "else" "while" "for" "return"*/
 %token PRINT INPUT
 
+%type <sval> expr binop
 %type <ival> type
 
 %nonassoc LOWER_THAN_ELSE
@@ -207,8 +213,29 @@ star_stmt: |star_stmt stmt ;
 stmt:
     IF LPAREN expr RPAREN stmt %prec LOWER_THAN_ELSE
     |IF LPAREN expr RPAREN stmt ELSE stmt
-    |WHILE LPAREN expr RPAREN stmt
-    |FOR LPAREN opt_assg SEMICLN opt_expr SEMICLN opt_assg RPAREN stmt
+    |WHILE LPAREN expr RPAREN stmt {
+        $<sval>$ = (char*)malloc(32);
+        char* start_label = new_label(cg);
+        char* end_label = new_label(cg);
+        sprintf($<sval>$, "%s %s", start_label, end_label);
+        emit(cg, "%s:", start_label);
+
+        //char start_label[16], end_label[16];
+        sscanf($<sval>2, "%s %s", start_label, end_label);
+        emit(cg, "JLE %s, %s", $3, end_label);
+
+        //char start_label[16], end_label[16];
+        sscanf($<sval>2, "%s %s", start_label, end_label);
+        emit(cg, "JMP %s", start_label);
+        emit(cg, "%s:", end_label);
+    }
+    |FOR LPAREN opt_assg SEMICLN opt_expr SEMICLN opt_assg RPAREN stmt {
+        $<sval>$ = (char*)malloc(32);
+        char* start_label = new_label(cg);
+        char* end_label = new_label(cg);
+        sprintf($<sval>$, "%s %s", start_label, end_label);
+        emit(cg, "%s:", start_label);
+    }
     |RETURN opt_expr SEMICLN
     |assg SEMICLN
     |ID LPAREN id_seq RPAREN SEMICLN {
@@ -222,7 +249,9 @@ stmt:
     }
     |LCRLY star_stmt RCRLY
     |SEMICLN
-    |PRINT LPAREN expr RPAREN SEMICLN
+    |PRINT LPAREN expr RPAREN SEMICLN {
+        emit(cg, "OUT %s", $3);
+    }
     |dcl SEMICLN
         ;
 
@@ -238,6 +267,7 @@ assg:
             printf("\nVariable %s used\n", $<sval>1);
             setUsed($<sval>1, 1);
         }
+        emit(cg, "%s = %s", $1, $4);
     }
     ;
 
@@ -247,8 +277,22 @@ opt_assg_expr:
 expr:
     MINUS expr %prec UMINUS
     |NOT expr
-    |expr binop expr 
-    |expr relop expr
+    |expr binop expr {
+        char* temp = new_temp(cg);
+        emit(cg, "%s = %s %s %s", temp, $1, $2, $3);
+        $$ = temp;
+    }
+    |expr relop expr {
+        if (inv_relop) {
+            char* temp = new_temp(cg);
+            emit(cg, "%s = %s - %s", temp, $3, $1);
+            $$ = temp;
+        } else {
+            char* temp = new_temp(cg);
+            emit(cg, "%s = %s - %s", temp, $1, $3);
+            $$ = temp;
+        }
+    }
     |expr logical_op expr
     |ID id_expr {
         if (!inTable($<sval>1)) {
@@ -258,11 +302,22 @@ expr:
             printf("\nVariable or function \"%s\" used\n", $<sval>1);
             setUsed($<sval>1, 1);
         }
+        $$ = strdup($<sval>1);
     }
-    |LPAREN expr RPAREN
+    |LPAREN expr RPAREN {
+        $$ = $2;
+    }
     |INPUT LPAREN RPAREN
-    |INTCON
-    |CHARCON
+    |INTCON {
+        char* val = malloc(32);
+        sprintf(val, "%d", $1);
+        $$ = val;
+    }
+    |CHARCON {
+        char* val = malloc(32);
+        sprintf(val, "%c", $1);
+        $$ = val;
+    }
     |STRINGCON
     ;
 
@@ -280,19 +335,19 @@ opt_expr_seq:
     ;
 
 binop:
-    PLUS
-    |MINUS
-    |MUL
-    |DIV
+    PLUS { $$ = "+"; }
+    |MINUS { $$ = "-"; }
+    |MUL { $$ = "*"; }
+    |DIV { $$ = "/"; }
     ;
 
 relop:
-    DBEQ
-    | NTEQ
-    | LTE
-    | LT
-    | GTE
-    | GT
+    DBEQ { inv_relop = 0; }
+    | NTEQ { inv_relop = 0; }
+    | LTE { inv_relop = 1; }
+    | LT { inv_relop = 1; }
+    | GTE { inv_relop = 0; }
+    | GT { inv_relop = 0; }
     ;
 
 logical_op:
@@ -322,6 +377,7 @@ int main(int argc, char *argv[]) {
         yyin = stdin;
     }
     
+    cg = init_codegen();
     int result = yyparse();
     
     if (file) {
@@ -330,9 +386,13 @@ int main(int argc, char *argv[]) {
     
     if (result == 0) {
         printf("Parsing completed successfully!\n");
+        printf("=== Código de 3 Endereços Gerado ===\n%s\n", cg->code);
+        printf("=== Código da VM Traduzido ===\n");
+        translate_to_vm(cg);
     } else {
         printf("Parsing failed with errors.\n");
     }
     
+    free_codegen(cg);
     return result;
 }
