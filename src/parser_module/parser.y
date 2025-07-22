@@ -213,29 +213,25 @@ star_stmt: |star_stmt stmt ;
 stmt:
     IF LPAREN expr RPAREN stmt %prec LOWER_THAN_ELSE
     |IF LPAREN expr RPAREN stmt ELSE stmt
-    |WHILE LPAREN expr RPAREN stmt {
+    |WHILE {
         $<sval>$ = (char*)malloc(32);
         char* start_label = new_label(cg);
         char* end_label = new_label(cg);
         sprintf($<sval>$, "%s %s", start_label, end_label);
         emit(cg, "%s:", start_label);
-
-        //char start_label[16], end_label[16];
+    } 
+    LPAREN expr RPAREN {
+        char start_label[16], end_label[16];
         sscanf($<sval>2, "%s %s", start_label, end_label);
-        emit(cg, "JLE %s, %s", $3, end_label);
-
-        //char start_label[16], end_label[16];
+        emit(cg, "JLE %s, %s", $4, end_label);
+    } 
+    stmt {
+        char start_label[16], end_label[16];
         sscanf($<sval>2, "%s %s", start_label, end_label);
         emit(cg, "JMP %s", start_label);
         emit(cg, "%s:", end_label);
     }
-    |FOR LPAREN opt_assg SEMICLN opt_expr SEMICLN opt_assg RPAREN stmt {
-        $<sval>$ = (char*)malloc(32);
-        char* start_label = new_label(cg);
-        char* end_label = new_label(cg);
-        sprintf($<sval>$, "%s %s", start_label, end_label);
-        emit(cg, "%s:", start_label);
-    }
+    |FOR LPAREN opt_assg SEMICLN opt_expr SEMICLN opt_assg RPAREN stmt
     |RETURN opt_expr SEMICLN
     |assg SEMICLN
     |ID LPAREN id_seq RPAREN SEMICLN {
