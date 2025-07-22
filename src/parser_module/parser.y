@@ -16,7 +16,7 @@ typedef struct SymbolTableReg {
     int used;       /* 0 == false; 1 == true */
 
     // pro gerador de codigo:
-    int type;
+    int type;       /* 0 == int ; 1 == char ; 2 == func */
     int address;
     int reg_num;
     int scope;
@@ -25,8 +25,9 @@ typedef struct SymbolTableReg {
 //typedef struct SymbolTableReg SymbolTableReg;
 SymbolTableReg *table = (SymbolTableReg*) 0;
 int semanticError = 0;
+int curr_type;
 
-void addSymbol(char *name, int used) {
+void addSymbol(char *name, int used, int type) {
     SymbolTableReg *ptr;
     ptr = (SymbolTableReg*) malloc(sizeof(SymbolTableReg));
 
@@ -34,6 +35,7 @@ void addSymbol(char *name, int used) {
 
     strcpy(ptr->name, name);
     ptr->used = used;
+    ptr->type = type;
 
     ptr->nxt = (struct SymbolTableReg*) table;
     table = ptr;
@@ -58,13 +60,13 @@ SymbolTableReg* find_symbol(const char* name) {
     return NULL;
 }
 
-void declareSymbol(char *name, int isVar) {
+void declareSymbol(char *name, int isVar, int type) {
     if (inTable(name)) {
         // redeclaration of a variable
         semanticError = 1;
         printf("\nSemantic Error: redeclaration of variable or function \"%s\"\n", name);
     } else {
-        addSymbol(name, !isVar);
+        addSymbol(name, !isVar, type);
 
         if (isVar)
             printf("\nVariable \"%s\" declared\n", name);
@@ -105,6 +107,8 @@ void setUsed(char *name, int used) {
 %token IF ELSE WHILE FOR RETURN /*"if" "else" "while" "for" "return"*/
 %token PRINT INPUT
 
+%type <ival> type
+
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 
@@ -128,6 +132,7 @@ all:
             int numWarnings = 0;
             SymbolTableReg *ptr = (SymbolTableReg*) table;
             while (ptr != (SymbolTableReg*)0) {
+                //printf("Var %s with type %d\n", ptr->name, ptr->type);
                 if (!ptr->used) {
                     hasWarning = 1;
                     numWarnings++;
@@ -156,37 +161,37 @@ opt_dcl_func:
 
 dcl:
     type var_decl opt_var_decl_seq
-    |EXTERN type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>3, 0); }
-    |type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>2, 0); }
-    |EXTERN ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>2, 0); }
-    |ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>1, 0); }
+    |EXTERN type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>3, 0, 2); }
+    |type ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>2, 0, 2); }
+    |EXTERN ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>2, 0, 2); }
+    |ID LPAREN parm_types RPAREN opt_id_parmtypes_seq { declareSymbol($<sval>1, 0, 2); }
     ;
 
 opt_id_parmtypes_seq: |COMMA ID LPAREN parm_types RPAREN ;
 
-var_decl: ID opt_intcon_brckt { declareSymbol($<sval>1, 1); };
+var_decl: ID opt_intcon_brckt { declareSymbol($<sval>1, 1, curr_type); };
 
 opt_intcon_brckt: |LBRCKT INTCON RBRCKT ;
 
 type:
-    CHAR_T
-    |INT_T
+    CHAR_T { $$ = curr_type = 1; }
+    |INT_T { $$ = curr_type = 0; }
     ;
 
 parm_types:
     VOID
-    |type ID opt_brckts opt_parm_types_seq { declareSymbol($<sval>2, 1); }
+    |type ID opt_brckts opt_parm_types_seq { declareSymbol($<sval>2, 1, $1); }
     ;
 
 opt_parm_types_seq:
-    |opt_parm_types_seq COMMA type ID opt_brckts { declareSymbol($<sval>4, 1); }
+    |opt_parm_types_seq COMMA type ID opt_brckts { declareSymbol($<sval>4, 1, $3); }
     ;
 
 opt_brckts: | LBRCKT RBRCKT ;
 
 func:
-    type ID LPAREN parm_types RPAREN LCRLY func_body RCRLY { declareSymbol($<sval>2, 0); }
-    |VOID ID LPAREN parm_types RPAREN LCRLY func_body RCRLY { declareSymbol($<sval>2, 0); }
+    type ID LPAREN parm_types RPAREN LCRLY func_body RCRLY { declareSymbol($<sval>2, 0, 2); }
+    |VOID ID LPAREN parm_types RPAREN LCRLY func_body RCRLY { declareSymbol($<sval>2, 0, 2); }
     ;
 
 func_body:
