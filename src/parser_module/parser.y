@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "geracode.h"
 
 void yyerror(const char *s);
 int yylex(void);
@@ -9,8 +10,16 @@ extern FILE *yyin;  // Declare yyin for file input
 
 typedef struct SymbolTableReg {
     char *name;     /* identifier name */
-    int used;       /* 0 == false; 1 == true */
     struct SymbolTableReg *nxt;
+
+    // pro analisador semantico:
+    int used;       /* 0 == false; 1 == true */
+
+    // pro gerador de codigo:
+    int type;
+    int address;
+    int reg_num;
+    int scope;
 } SymbolTableReg;
 
 //typedef struct SymbolTableReg SymbolTableReg;
@@ -38,6 +47,15 @@ int inTable(char *name) {
         ptr = (SymbolTableReg*)ptr->nxt;
     }
     return 0;
+}
+
+SymbolTableReg* find_symbol(const char* name) {
+    SymbolTableReg* current = table;
+    while (current) {
+        if (strcmp(current->name, name) == 0) return current;
+        current = current->nxt;
+    }
+    return NULL;
 }
 
 void declareSymbol(char *name, int isVar) {

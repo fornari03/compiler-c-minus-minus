@@ -14,7 +14,7 @@ CodeGenerator* init_codegen() {
     cg->code[0] = '\0';
     cg->temp_count = 0;
     cg->label_count = 0;
-    cg->symbol_table = NULL;
+    //cg->symbol_table = NULL;
     cg->mem_offset = 0;
 
     memset(cg->temp_names, 0, sizeof(cg->temp_names));
@@ -28,13 +28,15 @@ void free_codegen(CodeGenerator* cg) {
 
     free(cg->code);
 
-    Symbol* current = cg->symbol_table;
+    /*
+    SymbolTableReg* current = cg->symbol_table;
     while (current) {
-        Symbol* next = current->next;
+        SymbolTableReg* next = current->nxt;
         free(current->name);
         free(current);
         current = next;
     }
+    */
 
     for (int i = 0; i < MAX_TEMP_LABELS; i++) {
         free(cg->temp_names[i]);
@@ -92,31 +94,4 @@ char* new_label(CodeGenerator* cg) {
     }
     
     return cg->label_names[cg->label_count++];
-}
-
-Symbol* add_symbol(CodeGenerator* cg, const char* name, int type) {
-    if (find_symbol(cg, name)) {
-        fprintf(stderr, "Variável '%s' já declarada\n", name);
-        return NULL;
-    }
-
-    Symbol* sym = malloc(sizeof(Symbol));
-    sym->name = strdup(name);
-    sym->type = type;
-    sym->address = cg->mem_offset; 
-    sym->reg_num = cg->mem_offset++; 
-    sym->scope = 0;
-    sym->next = cg->symbol_table;
-    cg->symbol_table = sym;
-    
-    return sym;
-}
-
-Symbol* find_symbol(CodeGenerator* cg, const char* name) {
-    Symbol* current = cg->symbol_table;
-    while (current) {
-        if (strcmp(current->name, name) == 0) return current;
-        current = current->next;
-    }
-    return NULL;
 }
