@@ -2,11 +2,11 @@
 # Variáveis de Configuração
 # ====================================================================
 CC = gcc
-# ALTERADO: CFLAGS agora inclui todos os submódulos para os ficheiros .h
 CFLAGS = -Wall -Wextra -g -Wno-unused -Isrc/code_module -Isrc/parser_module -Isrc/scanner_module
 LEX = flex
 YACC = bison
-YFLAGS = -d -Wno-counterexamples
+# ALTERADO: Adicionadas flags para ignorar os avisos do bison
+YFLAGS = -d -Wno-counterexamples -Wno-conflicts-sr -Wno-other
 
 # --- ESTRUTURA DE PASTAS ---
 # ALTERADO: VPATH agora inclui todos os submódulos dentro de src
@@ -21,8 +21,8 @@ OBJ_NAMES = parser.tab.o lex.yy.o tradutor.o geracode.o
 OBJ = $(addprefix $(BUILD_DIR)/, $(OBJ_NAMES))
 
 # --- TESTES ---
-TEST_FILES = $(wildcard $(TEST_DIR)/*.lang)
-TEST_FILE ?= $(TEST_DIR)/teste.lang
+TEST_FILES = $(wildcard $(TEST_DIR)/*.cmm)
+TEST_FILE ?= $(TEST_DIR)/teste.cmm
 
 # ====================================================================
 # Alvos Principais

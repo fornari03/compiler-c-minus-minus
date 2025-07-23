@@ -8,10 +8,10 @@ if [ ! -f "$COMPILADOR" ]; then
 fi
 
 # Alterado: Procura os ficheiros de teste dentro da pasta TEST_DIR
-arquivos_de_teste=($TEST_DIR/*.lang)
+arquivos_de_teste=($TEST_DIR/*.cmm)
 
 if [ ${#arquivos_de_teste[@]} -eq 0 ] || [ ! -f "${arquivos_de_teste[0]}" ]; then
-    echo "Nenhum ficheiro de teste (*.lang) encontrado na pasta '$TEST_DIR'."
+    echo "Nenhum ficheiro de teste (*.cmm) encontrado na pasta '$TEST_DIR'."
     exit 1
 fi
 
